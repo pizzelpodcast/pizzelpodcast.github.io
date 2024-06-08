@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pizzel Floppy</title>
+    <link rel="stylesheet" href="style.css">
+    <script type="module">
+      const MAX_ROTATION_DEGS = 120;
+
+      function ease(i, cutover = 0.9) {
+        if (i > cutover) {
+          i = (i - cutover) / (1 - cutover);
+          // ease-in-out-quad
+          return 1 - (i < 0.5 ? 2 * i * i : 1 - Math.pow(-2 * i + 2, 2) / 2);
+        } else {
+          return i / cutover;
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', () => {
+        const {control, floppy} = window;
+
+        control.addEventListener("mousemove", (e) => {
+          floppy.classList.add("manual");
+
+          let xRotRate = (e.offsetY / floppy.offsetHeight) - 0.5, yRotRate = (e.offsetX / floppy.offsetWidth) - 0.5;
+
+          xRotRate = Math.sign(xRotRate) * ease(Math.abs(xRotRate * 2)) / 2;
+          yRotRate = Math.sign(yRotRate) * ease(Math.abs(yRotRate * 2)) / 2;
+
+          const xDeg = -xRotRate * MAX_ROTATION_DEGS, yDeg = -yRotRate * MAX_ROTATION_DEGS;
+
+          floppy.style.transform = `rotateX(${xDeg}deg) rotateY(${yDeg}deg)`;
+          floppy.style.setProperty("--gradient-angle", `${xRotRate * yRotRate * 360 * 2}deg`);
+        });
+
+        control.addEventListener("mouseleave", (e) => {
+          floppy.classList.remove("manual");
+          floppy.style.transform = `rotateX(0) rotateY(0)`;
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <main>
+      <div id="control"></div>
+      <div class="floppy" id="floppy">
+        <div class="face front"></div>
+        <div class="face disk"></div>
+        <div class="face left-side"></div>
+        <div class="face right-side"></div>
+        <div class="face top"></div>
+        <div class="face bottom"></div>
+        <div class="face angled-corner"></div>
+      </div>
+    </main>
+  </body>
+</html>

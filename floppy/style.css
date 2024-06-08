@@ -1,0 +1,148 @@
+body {
+  font-family: sans-serif;
+  background-color: black;
+  background-image: url(bg.svg);
+  background-size: 100% 100%;
+  background-attachment: fixed;
+  font-size: 13px;
+  padding: 0;
+  margin: 0;
+}
+
+main {
+  position: relative;
+  overflow: visible;
+  min-height: 100vh;
+  perspective: 800px;
+  transform: scale(0.8);
+}
+
+#control {
+  position: absolute;
+  width: 90mm;
+  height: 93mm;
+  margin: auto;
+  inset: 0;
+  transform: scale(2);
+}
+
+.floppy {
+  position: absolute;
+  width: 90mm;
+  height: 93mm;
+  margin: auto;
+  inset: 0;
+  overflow: visible;
+  transform-style: preserve-3d;
+  -webkit-backface-visibility: hidden;
+  outline: 1px solid transparent;
+  transition: transform ease-in-out 0.5s;
+  will-change: transform;
+  animation: intro 3s;
+  pointer-events: none;
+  --glare-1: rgba(150, 231, 255, 0.5);
+  --glare-2: rgba(255, 200, 231, 0.5);
+}
+
+.manual {
+  transition: none;
+}
+
+.face {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+}
+
+.front {
+  background-image: linear-gradient(var(--gradient-angle, 115deg), transparent 0%, var(--glare-2) 25%, transparent 47%, transparent 53%, var(--glare-2) 75%, transparent 100%), url("face.svg");
+  background-size: cover;
+  background-blend-mode: saturation, normal;
+}
+
+.left-side {
+  width: 3mm;
+  background-color: rgba(230, 230, 230, 0.6);
+  transform-origin: left;
+  transform: rotateY(90deg);
+}
+
+.right-side {
+  width: 3mm;
+  height: 88.05mm;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(230, 230, 230, 0.6);
+  transform-origin: right;
+  transform: rotateY(-90deg);
+}
+
+.top {
+  height: 3mm;
+  width: 85.05mm;
+  background-color: rgba(250, 250, 250, 0.6);
+  transform-origin: top;
+  transform: rotateX(-90deg);
+}
+
+/* bottom */
+.bottom {
+  height: 3mm;
+  bottom: 0;
+  background-color: rgba(120, 120, 120, 0.6);
+  transform-origin: bottom;
+  transform: rotateX(90deg);
+}
+
+.angled-corner {
+  right: 0;
+  height: 3mm;
+  width: 7.0003571337mm;
+  transform-origin: left top;
+  transform: translateX(2.0503571337mm) rotateZ(45deg) rotateX(-90deg);
+  background-color: rgba(220, 220, 220, 0.6);
+}
+
+.disk {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  background-image: radial-gradient(circle at center, #c8c8c8 0, #c8c8c8 20%, black 20%, black 25%, #e6e6e6 25%, #e6e6e6 69%, white 69%, white 100%);
+  background-repeat: no-repeat;
+  background-size: contain;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 100%;
+  transform: scale(0.95) translateZ(-1.5mm);
+}
+.disk::after {
+  content: "";
+  position: absolute;
+  border-radius: 100%;
+  width: 23%;
+  height: auto;
+  aspect-ratio: 1;
+  inset: 0;
+  margin: auto;
+  background-color: #c8c8c8;
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0" y="0" viewBox="0 0 1 1" xml:space="preserve" height="20px" width="20px"><rect width="1" height="1" fill="black"></rect></svg>');
+  background-repeat: no-repeat;
+  background-position: center;
+  transform: rotate(10deg);
+  box-shadow: 0 -3px 3px #646478, 0 3px 3px white;
+}
+
+@keyframes intro {
+  0% {
+    transform: scaleX(0) scaleY(0) rotateX(90deg) rotateZ(30deg);
+  }
+  80% {
+    transform: scaleX(0.8) scaleY(0.8) rotateX(45deg) rotateZ(45deg);
+  }
+  100% {
+    transform: scaleX(1) scaleY(1) rotateX(0) rotateZ(0);
+  }
+}
+
+/*# sourceMappingURL=style.css.map */
