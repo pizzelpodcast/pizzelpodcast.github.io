@@ -139,7 +139,7 @@
         requestAnimationFrame(update)
       }
 
-      start();
+      floppy.addEventListener("animationend", () => start(), {once: true})
 
       function updatePlayButton() { play.classList.toggle("-playing", !audio.paused) }
 
