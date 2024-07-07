@@ -1,10 +1,13 @@
+:root {
+  font-size: 13px;
+}
+
 body {
-  font-family: sans-serif;
+  font-family: arial, sans-serif;
   background-color: black;
   background-image: url(bg.svg);
   background-size: 100% 100%;
   background-attachment: fixed;
-  font-size: 13px;
   padding: 0;
   margin: 0;
 }
@@ -13,35 +16,78 @@ main {
   position: relative;
   overflow: visible;
   min-height: 100vh;
-  perspective: 800px;
-  transform: scale(0.8);
 }
 
-#control {
+[hidden] {
+  display: none !important;
+}
+
+#browse {
   position: absolute;
-  width: 90mm;
-  height: 93mm;
+  top: 0;
+  visibility: hidden;
+}
+
+.v {
+  position: absolute;
+  font-size: 10px;
+  top: 0.1em;
+  right: 0.3em;
+  color: rgba(120, 200, 255, 0.25);
+  pointer-events: none;
+}
+
+.tip {
+  max-width: 72mm;
+  margin: auto;
+  text-align: justify;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.8);
+  text-shadow: 0 0 10px rgba(150, 230, 255, 0.5);
+  pointer-events: none;
+}
+.tip p {
+  margin-top: 0;
+}
+
+#control, #loading {
+  position: absolute;
+  width: 144mm;
+  height: 148.8mm;
   margin: auto;
   inset: 0;
-  transform: scale(2);
+  perspective: 800px;
+}
+
+#loading {
+  color: white;
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .floppy {
+  cursor: pointer;
   position: absolute;
-  width: 90mm;
-  height: 93mm;
+  width: 72mm;
+  height: 74.4mm;
   margin: auto;
   inset: 0;
   overflow: visible;
   transform-style: preserve-3d;
   -webkit-backface-visibility: hidden;
   outline: 1px solid transparent;
-  transition: transform ease-in-out 0.5s;
   will-change: transform;
-  animation: intro 3s;
-  pointer-events: none;
-  --glare-1: rgba(150, 231, 255, 0.5);
-  --glare-2: rgba(255, 200, 231, 0.5);
+  animation: floppy-intro 3s;
+  --glare-1: rgba(150, 231, 255, 0.75);
+  --glare-2: rgba(255, 200, 231, 0.75);
+}
+.floppy.-outro {
+  animation: floppy-outro 2s;
+}
+.floppy.-outro .hint-bottom, .floppy.-outro .hint-top {
+  display: none;
 }
 
 .manual {
@@ -61,15 +107,15 @@ main {
 }
 
 .left-side {
-  width: 3mm;
+  width: 2.4mm;
   background-color: rgba(230, 230, 230, 0.6);
   transform-origin: left;
   transform: rotateY(90deg);
 }
 
 .right-side {
-  width: 3mm;
-  height: 88.05mm;
+  width: 2.4mm;
+  height: 70.44mm;
   right: 0;
   bottom: 0;
   background-color: rgba(230, 230, 230, 0.6);
@@ -78,8 +124,8 @@ main {
 }
 
 .top {
-  height: 3mm;
-  width: 85.05mm;
+  height: 2.4mm;
+  width: 68.04mm;
   background-color: rgba(250, 250, 250, 0.6);
   transform-origin: top;
   transform: rotateX(-90deg);
@@ -87,7 +133,7 @@ main {
 
 /* bottom */
 .bottom {
-  height: 3mm;
+  height: 2.4mm;
   bottom: 0;
   background-color: rgba(120, 120, 120, 0.6);
   transform-origin: bottom;
@@ -96,10 +142,10 @@ main {
 
 .angled-corner {
   right: 0;
-  height: 3mm;
-  width: 7.0003571337mm;
+  height: 2.4mm;
+  width: 5.600285707mm;
   transform-origin: left top;
-  transform: translateX(2.0503571337mm) rotateZ(45deg) rotateX(-90deg);
+  transform: translateX(1.640285707mm) rotateZ(45deg) rotateX(-90deg);
   background-color: rgba(220, 220, 220, 0.6);
 }
 
@@ -114,7 +160,7 @@ main {
   height: auto;
   aspect-ratio: 1;
   border-radius: 100%;
-  transform: scale(0.95) translateZ(-1.5mm);
+  transform: scale(0.95) translateZ(-1.2mm);
 }
 .disk::after {
   content: "";
@@ -126,14 +172,115 @@ main {
   inset: 0;
   margin: auto;
   background-color: #c8c8c8;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0" y="0" viewBox="0 0 1 1" xml:space="preserve" height="20px" width="20px"><rect width="1" height="1" fill="black"></rect></svg>');
+  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" height="20px" width="20px"><rect width="1" height="1"></rect></svg>');
   background-repeat: no-repeat;
   background-position: center;
   transform: rotate(10deg);
   box-shadow: 0 -3px 3px #646478, 0 3px 3px white;
 }
 
-@keyframes intro {
+.hint, .hint-top, .hint-bottom {
+  position: absolute;
+  color: white;
+  left: 0;
+  width: 100%;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+}
+
+.hint-bottom {
+  transform-origin: top;
+  top: 100%;
+  transform: rotateX(-90deg) translateY(3mm);
+}
+
+.hint-top {
+  transform-origin: bottom;
+  bottom: 100%;
+  transform: rotateX(90deg) translateY(-3mm);
+}
+
+.player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(800px, 90vw);
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  color: white;
+  font-size: 1.2rem;
+  backdrop-filter: drop-shadow(4px 4px 10px yellow);
+}
+.player.-intro {
+  animation: player-intro ease-out 1.5s;
+}
+.player > div {
+  display: flex;
+  align-items: center;
+}
+.player button {
+  display: flex;
+  align-items: center;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.player button:hover, .player button:focus-visible, .player input[type=range]:hover, .player input[type=range]:focus-visible {
+  outline: none;
+  transition: filter 0.2s;
+  filter: drop-shadow(0 0 10px white);
+}
+.player svg {
+  fill: white;
+  width: 1.5em;
+  aspect-ratio: 1;
+}
+
+.player-play-pause use:first-child {
+  visibility: hidden;
+}
+.player-play-pause.-playing use:first-child {
+  visibility: visible;
+}
+.player-play-pause.-playing use:last-child {
+  visibility: hidden;
+}
+.player-play-pause svg {
+  width: 3em;
+}
+
+.player-seeker, .player-volume {
+  accent-color: white;
+}
+
+.player-volume {
+  margin-left: 5px;
+}
+
+.player-seeker-wrapper {
+  position: relative;
+  flex-grow: 1;
+}
+
+.player-seeker-pos {
+  position: absolute;
+  top: -1.5em;
+  width: 8ex;
+  transform: translateX(-50%);
+}
+
+.player-seeker {
+  flex-grow: 1;
+}
+
+.player-pos, .player-dur {
+  width: 8ex;
+}
+
+@keyframes floppy-intro {
   0% {
     transform: scaleX(0) scaleY(0) rotateX(90deg) rotateZ(30deg);
   }
@@ -142,6 +289,29 @@ main {
   }
   100% {
     transform: scaleX(1) scaleY(1) rotateX(0) rotateZ(0);
+  }
+}
+@keyframes floppy-outro {
+  0% {
+    transform: scale(1) rotateX(0);
+  }
+  70% {
+    transform: scaleX(1) rotateX(75deg);
+  }
+  100% {
+    transform: translateZ(-1000px) rotateX(90deg);
+  }
+}
+@keyframes player-intro {
+  0% {
+    filter: blur(10px);
+    transform: scale(0.75);
+    opacity: 0;
+  }
+  100% {
+    filter: blur(0);
+    transform: scale(1);
+    opacity: 1;
   }
 }
 

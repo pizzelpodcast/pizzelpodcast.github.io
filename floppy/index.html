@@ -1,51 +1,202 @@
 <!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pizzel Floppy</title>
-    <link rel="stylesheet" href="style.css">
-    <script type="module">
-      const MAX_ROTATION_DEGS = 120;
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💾 Pizzel Floppy</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="c2dec.datauri.js"></script>
+  <script type="module">
+    const MAX_ROTATION_DEGS = 120, SMOOTHING_FACTOR = 0.01
 
-      function ease(i, cutover = 0.9) {
-        if (i > cutover) {
-          i = (i - cutover) / (1 - cutover);
-          // ease-in-out-quad
-          return 1 - (i < 0.5 ? 2 * i * i : 1 - Math.pow(-2 * i + 2, 2) / 2);
-        } else {
-          return i / cutover;
+    // Helper function to format time in HH:MM:SS
+    function ftime(sec) {
+      const f = (n) => Math.floor(n).toString().padStart(2, '0')
+      return `${f(sec / 3600)}:${f(sec % 3600 / 60)}:${f(sec % 60)}`
+    }
+
+    function c2dec(data) {
+      return new Promise((resolve) => {
+        const module = {
+          args: ["1200", "in.c2", "out.raw"],
+          preRun: () => { module.FS.writeFile("in.c2", new Uint8Array(data)) },
+          postRun: () => { resolve(module.FS.readFile("out.raw", { encoding: "binary" })) }
         }
+        createC2Dec(module)
+      })
+    }
+
+    function readFileAsArrayBuffer(f) {
+      return new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => { resolve(reader.result) }
+        reader.readAsArrayBuffer(f)
+      })
+    }
+
+    // from https://gist.github.com/also/900023
+    function buildWavHeader(nFrames) {
+      let blkAlign = 2, dataSize = nFrames * blkAlign, buf = new ArrayBuffer(44), dv = new DataView(buf), p = 0, i
+      function str(s) {
+        for (i = 0; i < s.length; i++) {
+          dv.setUint8(p + i, s.charCodeAt(i))
+        }
+        p += s.length
+      }
+      function ui32(d) {
+        dv.setUint32(p, d, true)
+        p += 4
+      }
+      function ui16(d) {
+        dv.setUint16(p, d, true)
+        p += 2
+      }
+      str('RIFF')    // ChunkID
+      ui32(dataSize + 36) // ChunkSize
+      str('WAVEfmt ')  // Format+Subchunk1ID
+      ui32(16)       // Subchunk1Size
+      ui16(1)        // AudioFormat
+      ui16(1)        // NumChannels
+      ui32(8000)     // SampleRate
+      ui32(16000)    // ByteRate
+      ui16(2)        // BlockAlign
+      ui16(16)       // BitsPerSample
+      str('data')    // Subchunk2ID
+      ui32(dataSize) // Subchunk2Size
+      return buf
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const {control, floppy, loading, browse, audio, player, play, seek, seekpos, pos, dur, vol} = window
+
+      let targetAngleX = 0, targetAngleY = 0, angleX = 0, angleY = 0
+      let prevTime = performance.now()
+      let animating = true
+
+      async function initAudio(buf) {
+        const header = new Uint8Array(buildWavHeader(buf.byteLength / Uint8Array.BYTES_PER_ELEMENT))
+        const wav = new Uint8Array(header.length + buf.byteLength)
+        wav.set(header, 0)
+        wav.set(new Uint8Array(buf), header.length)
+        audio.src = URL.createObjectURL(new Blob([wav], {type: 'audio/wav'}))
       }
 
-      document.addEventListener('DOMContentLoaded', () => {
-        const {control, floppy} = window;
+      function update() {
+        if (!animating) return
 
-        control.addEventListener("mousemove", (e) => {
-          floppy.classList.add("manual");
+        const now = performance.now()
+        const dt = Math.min(now - prevTime, 200)
+        prevTime = now
 
-          let xRotRate = (e.offsetY / floppy.offsetHeight) - 0.5, yRotRate = (e.offsetX / floppy.offsetWidth) - 0.5;
+        angleX += (targetAngleX - angleX) * SMOOTHING_FACTOR * dt
+        angleY += (targetAngleY - angleY) * SMOOTHING_FACTOR * dt
 
-          xRotRate = Math.sign(xRotRate) * ease(Math.abs(xRotRate * 2)) / 2;
-          yRotRate = Math.sign(yRotRate) * ease(Math.abs(yRotRate * 2)) / 2;
+        floppy.style.transform = `rotateX(${angleX}deg) rotateY(${angleY}deg)`
+        floppy.style.setProperty("--gradient-angle", `${angleX * angleY * 360 * 2 / (MAX_ROTATION_DEGS * MAX_ROTATION_DEGS)}deg`)
 
-          const xDeg = -xRotRate * MAX_ROTATION_DEGS, yDeg = -yRotRate * MAX_ROTATION_DEGS;
+        requestAnimationFrame(update)
+      }
 
-          floppy.style.transform = `rotateX(${xDeg}deg) rotateY(${yDeg}deg)`;
-          floppy.style.setProperty("--gradient-angle", `${xRotRate * yRotRate * 360 * 2}deg`);
-        });
+      function mm(e) {
+        // Can't use e.offsetX/Y because it's relative to e.target, which is
+        // sometimes the floppy disk and not the control div
+        const offsetY = e.pageY - control.offsetTop, offsetX = e.pageX - control.offsetLeft;
+        targetAngleX = -(offsetY / control.offsetHeight - 0.5) * MAX_ROTATION_DEGS
+        targetAngleY = (offsetX / control.offsetWidth - 0.5) * MAX_ROTATION_DEGS
+      }
+      function ml() { targetAngleX = targetAngleY = 0 }
+      function c() { browse.click() }
 
-        control.addEventListener("mouseleave", (e) => {
-          floppy.classList.remove("manual");
-          floppy.style.transform = `rotateX(0) rotateY(0)`;
-        });
-      });
-    </script>
-  </head>
-  <body>
-    <main>
-      <div id="control"></div>
+      function start() {
+        control.addEventListener("mousemove", mm)
+        control.addEventListener("mouseleave", ml)
+        floppy.addEventListener("click", c)
+
+        browse.addEventListener("change", async () => {
+          const mb = Math.round(((browse.files[0].size / (1200/8)) * 16000) / (1000*1000))
+          if (mb > 90) {
+            if (!confirm(`Vamos a necesitar unos ${mb}MB de RAM para reproducir este audio, ¿todo bien?`)) {
+              return
+            }
+          }
+
+          animating = false
+          floppy.removeEventListener("click", c)
+          control.removeEventListener("mousemove", mm)
+          control.removeEventListener("mouseleave", mm)
+
+          floppy.addEventListener("animationend", async () => {
+            control.hidden = true
+            loading.hidden = false
+            // This freezes the browser until done, so we can't save time
+            // by starting it alongside with the outro animation
+            initAudio(await c2dec(await readFileAsArrayBuffer(browse.files[0])))
+          })
+
+          floppy.classList.add("-outro")
+        })
+
+        requestAnimationFrame(update)
+      }
+
+      start();
+
+      function updatePlayButton() { play.classList.toggle("-playing", !audio.paused) }
+
+      let seeking = false
+
+      // Play/Pause
+      play.addEventListener("click", () => audio[audio.paused ? "play" : "pause"]())
+      audio.addEventListener("play", updatePlayButton)
+      audio.addEventListener("pause", updatePlayButton)
+
+      // Seeking
+      seek.addEventListener("change", () => {
+        audio.currentTime = seek.value
+        seeking = false
+        seekpos.hidden = true
+      })
+      seek.addEventListener("input", (e) => {
+        seekpos.textContent = ftime(seek.value)
+        seekpos.style.left = `${(seek.value / audio.duration) * 100}%`
+      })
+      audio.addEventListener("timeupdate", () => {
+        pos.textContent = ftime(audio.currentTime)
+        if (!seeking) seek.value = audio.currentTime
+      })
+      seek.addEventListener("mousedown", () => {
+        seeking = true
+        seekpos.hidden = false
+      })
+      seek.addEventListener("mouseup", () => {
+        seeking = false
+        seekpos.hidden = true
+      })
+
+      // Volume Control
+      vol.addEventListener("input", () => {
+        audio.volume = vol.value / 100
+      })
+
+      // Loading
+      audio.addEventListener("loadedmetadata", () => {
+        dur.textContent = ftime(seek.max = Math.round(audio.duration))
+        seek.value = 0
+        play.disabled = seek.disabled = vol.disabled = false
+        player.hidden = false
+        loading.hidden = true
+        player.classList.add("-intro")
+        audio.play()
+      })
+    })
+  </script>
+<body>
+  <main>
+    <div class="v">PizzelSoft Player (Floppy Disk Edition) Version 1.0</div>
+    <div id="control">
       <div class="floppy" id="floppy">
+        <div class="hint-top">👋 pst! abajo!</div>
+        <div class="hint-bottom">👆 dale click para abrir el archivo de audio .c2</div>
         <div class="face front"></div>
         <div class="face disk"></div>
         <div class="face left-side"></div>
@@ -54,6 +205,45 @@
         <div class="face bottom"></div>
         <div class="face angled-corner"></div>
       </div>
-    </main>
-  </body>
-</html>
+    </div>
+    <div id="loading" class="loading" hidden>
+      <div>
+        <h1>☕️</h1>
+
+        <h2>Precalentando cuerdas vocales&hellip;</h2>
+        <p>Esto pueder tardar varios segundos, no cierres la página y preparate un café<br>(pero instantáneo que no es para tanto)</p>
+
+        <!--
+        <h2>Loading&hellip;</h2>
+        <p>This may take several seconds, don't close the page and grab yourself a cup of coffee (but make it quick!)</p>
+
+        <h2>ローディング中</h2>
+        <p>何秒かかかりそうなので、このページを閉じずにコーヒーの準備をおすすめします</p>
+        -->
+      </div>
+    </div>
+    <div id="player" class="player" hidden>
+      <button id="play" class="player-play-pause"><svg><use xlink:href="#icon-pause"/><use xlink:href="#icon-play"/></svg></button>
+      <div class="player-seeker-wrapper">
+        <span class="player-seeker-pos" id="seekpos" hidden></span>
+        <input id="seek" type="range" class="player-seeker" value="0">
+      </div>
+      <div>
+        <span id="pos" class="player-pos">00:00:00</span>
+        <span>&nbsp;/&nbsp;</span>
+        <span id="dur" class="player-dur">--:--:--</span>
+      </div>
+      <div>
+        <svg><use xlink:href="#icon-volume"></svg>
+        <input id="vol" type="range" value="100" class="player-volume">
+      </div>
+    </div>
+  </main>
+  <input type="file" id="browse" accept=".c2">
+  <audio controls hidden id="audio"></audio>
+  <svg style="display: none">
+    <symbol id="icon-pause" viewBox="0 0 18 18"><path d="M6 1H3c-.6 0-1 .4-1 1v14c0 .6.4 1 1 1h3c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1zm6 0c-.6 0-1 .4-1 1v14c0 .6.4 1 1 1h3c.6 0 1-.4 1-1V2c0-.6-.4-1-1-1h-3z"></path></symbol>
+    <symbol id="icon-play" viewBox="0 0 18 18"><path d="M15.562 8.1L3.87.225c-.818-.562-1.87 0-1.87.9v15.75c0 .9 1.052 1.462 1.87.9L15.563 9.9c.584-.45.584-1.35 0-1.8z"></path></symbol>
+    <symbol id="icon-volume" viewBox="0 0 18 18"><path d="M15.6 3.3c-.4-.4-1-.4-1.4 0-.4.4-.4 1 0 1.4C15.4 5.9 16 7.4 16 9c0 1.6-.6 3.1-1.8 4.3-.4.4-.4 1 0 1.4.2.2.5.3.7.3.3 0 .5-.1.7-.3C17.1 13.2 18 11.2 18 9s-.9-4.2-2.4-5.7z"></path><path d="M11.282 5.282a.909.909 0 000 1.316c.735.735.995 1.458.995 2.402 0 .936-.425 1.917-.995 2.487a.909.909 0 000 1.316c.145.145.636.262 1.018.156a.725.725 0 00.298-.156C13.773 11.733 14.13 10.16 14.13 9c0-.17-.002-.34-.011-.51-.053-.992-.319-2.005-1.522-3.208a.909.909 0 00-1.316 0zm-7.496.726H.714C.286 6.008 0 6.31 0 6.76v4.512c0 .452.286.752.714.752h3.072l4.071 3.858c.5.3 1.143 0 1.143-.602V2.752c0-.601-.643-.977-1.143-.601L3.786 6.008z"></path></symbol>
+    <symbol id="icon-muted" viewBox="0 0 18 18"><path d="M12.4 12.5l2.1-2.1 2.1 2.1 1.4-1.4L15.9 9 18 6.9l-1.4-1.4-2.1 2.1-2.1-2.1L11 6.9 13.1 9 11 11.1zM3.786 6.008H.714C.286 6.008 0 6.31 0 6.76v4.512c0 .452.286.752.714.752h3.072l4.071 3.858c.5.3 1.143 0 1.143-.602V2.752c0-.601-.643-.977-1.143-.601L3.786 6.008z"></path></symbol>
+  </svg>
