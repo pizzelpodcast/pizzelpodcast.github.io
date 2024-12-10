@@ -8,16 +8,20 @@
     const TARGET_HEIGHT = 874112;
 
     document.addEventListener("DOMContentLoaded", async () => {
+      document.getElementById("targetheight").textContent = TARGET_HEIGHT;
+
       let req = await fetch("https://blockchain.info/q/getblockcount?cors=true");
       const height = Number(await req.text());
 
-      document.getElementById("blockheight").textContent = height;
+      document.getElementById("currentheight").textContent = height;
 
       if (height >= TARGET_HEIGHT) {
         let req = await fetch(`https://blockchain.info/block-height/${TARGET_HEIGHT}?format=json&cors=true`);
         const blocks = await req.json();
 
-        console.log(blocks);
+        if (blocks.blocks.length === 1) {
+          document.getElementById("hash").textContent = blocks.blocks[0].hash;
+        }
       }
     });
   </script>
@@ -29,6 +33,14 @@
   </header>
 
   <p>
-    Bloque actual: <span id="blockheight">######</span>
+    Bloque objectivo: <span id="targetheight">span>
+  </p>
+
+  <p>
+    Bloque actual: <span id="currentheight">&hellip;<span>
+  </p>
+
+  <p>
+    Hash: <code id="hash"><code>
   </p>
 </body>
