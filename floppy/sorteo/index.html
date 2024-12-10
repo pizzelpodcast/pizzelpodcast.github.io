@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <title>Pizzel Ep. 100 - Floppy Edition</title>
+  <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+
+  <script type="module">
+    document.addEventListener("DOMContentLoaded", async () => {
+      const req = await fetch("https://blockchain.info/q/getblockcount");
+      const height = Number(await req.text());
+
+      document.getElementById("blockheight").textContent = height;
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <h1>Pizzel Ep. 100 - Floppy Edition</title>
+    <h2>Sorto</h2>
+  </header>
+
+  <p>
+    Block height: <span id="blockheight">######</span>
+  </p>
+</body>
