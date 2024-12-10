@@ -19,6 +19,8 @@
         let req = await fetch(`https://blockchain.info/block-height/${TARGET_HEIGHT}?format=json&cors=true`);
         const blocks = await req.json();
 
+        console.log(blocks);
+
         if (blocks.blocks.length === 1) {
           document.getElementById("hash").textContent = blocks.blocks[0].hash;
         }
