@@ -15,7 +15,7 @@
 
       if (height >= TARGET_HEIGHT) {
         let req = await fetch(`https://blockchain.info/block-height/${TARGET_HEIGHT}?format=json&cors=true`);
-        const blocks = req.json();
+        const blocks = await req.json();
 
         console.log(blocks);
       }
