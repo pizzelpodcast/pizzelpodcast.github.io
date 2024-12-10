@@ -5,11 +5,20 @@
   <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
 
   <script type="module">
+    const TARGET_HEIGHT = 874112;
+
     document.addEventListener("DOMContentLoaded", async () => {
-      const req = await fetch("https://blockchain.info/q/getblockcount?cors=true");
+      let req = await fetch("https://blockchain.info/q/getblockcount?cors=true");
       const height = Number(await req.text());
 
       document.getElementById("blockheight").textContent = height;
+
+      if (height >= TARGET_HEIGHT) {
+        let req = await fetch(`https://blockchain.info/block-height/${TARGET_HEIGHT}?format=json&cors=true`);
+        const blocks = req.json();
+
+        console.log(blocks);
+      }
     });
   </script>
 </head>
