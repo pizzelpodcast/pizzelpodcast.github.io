@@ -6,7 +6,7 @@
 
   <script type="module">
     document.addEventListener("DOMContentLoaded", async () => {
-      const req = await fetch("https://blockchain.info/q/getblockcount");
+      const req = await fetch("https://blockchain.info/q/getblockcount?cors=true");
       const height = Number(await req.text());
 
       document.getElementById("blockheight").textContent = height;
