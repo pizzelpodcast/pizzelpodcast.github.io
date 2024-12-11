@@ -70,7 +70,7 @@
 
             document.getElementById("hash").innerHTML = `${hashLeft}<mark>${hashRight}</mark>`;
             document.getElementById("subhash").textContent = hashRight;
-            document.getElementById("subhash10").textContent = hashRight10.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            document.getElementById("subhash10").textContent = hashRight10.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
             document.getElementById("subhashdiv").textContent = hashRightDiv;
             document.getElementById("winner").textContent = PARTICIPANTS[hashRightDiv - 1];
           }
