@@ -48,6 +48,7 @@
 
       document.getElementById("currentheight").textContent = currentHeight;
       targetHeightInput.value = currentHeight;
+      targetHeightInput.max = currentHeight;
 
       goButton.addEventListener("click", async () => {
         goButton.disabled = true;
@@ -97,7 +98,7 @@
   </p>
 
   <p>
-    Bloque objectivo: <input type="number" id="targetheight"></input> <button type="button" id="go">Dale!</button>
+    Bloque objectivo: <input type="number" id="targetheight" required></input> <button type="button" id="go">Dale!</button>
   </p>
 
   <p>
