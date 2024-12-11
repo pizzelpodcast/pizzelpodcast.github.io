@@ -5,9 +5,42 @@
   <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
 
   <script type="module">
+    const PARTICIPANTS = [
+      "adventure_pixie23",
+      "wanderlust_mike",
+      "coffee_ninja_87",
+      "urban_explorer_sam",
+      "fitness_guru_luna",
+      "foodie_dreams_katie",
+      "travel_bug_alex",
+      "sunset_chaser_emma",
+      "tech_wizard_jay",
+      "nature_lover_rose",
+      "fitness_freak_max",
+      "music_maven_charlie",
+      "book_worm_emily",
+      "art_soul_sophia",
+      "digital_nomad_ryan",
+      "vintage_vibes_lily",
+      "sneaker_collector_jack",
+      "plant_parent_aria",
+      "workout_warrior_zoe",
+      "music_mood_oliver"
+    ];
+
     const TARGET_HEIGHT = 874112;
 
+    const HASH_WINDOW_SIZE = 16;
+
     document.addEventListener("DOMContentLoaded", async () => {
+      const participantsElement = document.getElementById("participants");
+
+      PARTICIPANTS.forEach((participant) => {
+        const li = document.createElement("li");
+        li.textContent = participant;
+        participantsElement.append(li);
+      });
+
       document.getElementById("targetheight").textContent = TARGET_HEIGHT;
 
       let req = await fetch("https://blockchain.info/q/getblockcount?cors=true");
@@ -22,7 +55,17 @@
         console.log(blocks);
 
         if (blocks.blocks.length === 1) {
-          document.getElementById("hash").textContent = blocks.blocks[0].hash;
+          const hash = blocks.blocks[0].hash;
+          const hashLeft = hash.substring(0, hash.length - HASH_WINDOW_SIZE);
+          const hashRight = hash.substring(hash.length - HASH_WINDOW_SIZE);
+          const hashRight10 = parseInt(hashRight, 16);
+          const hashRightDiv = (hashRight10 / PARTICIPANTS.length).round();
+
+          document.getElementById("hash").innerHTML = `${hashLeft}<mark>${hashRight}</mark>`;
+          document.getElementById("subhash").textContent = hashRight;
+          document.getElementById("subhash10").textContent = hashRight10;
+          document.getElementById("subhashdiv").textContent = hashRightDiv;
+          document.getElementById("winner").textContent = PARTICIPANTS[hashRightDiv];
         }
       }
     });
@@ -30,12 +73,19 @@
 </head>
 <body>
   <header>
-    <h1>Pizzel Ep. 100 - Floppy Edition</title>
-    <h2>Sorteo</h2>
+    <h1>Pizzel Ep. 100 - Floppy Edition 💾</h1>
+    <h2>Simulació de Sorteo 🎟️</h2>
   </header>
 
   <p>
-    Bloque objectivo: <span id="targetheight">span>
+    Participantes:
+
+    <ul id="participants">
+    </ul>
+  </p>
+
+  <p>
+    Bloque objectivo: <span id="targetheight"><span>
   </p>
 
   <p>
@@ -44,5 +94,21 @@
 
   <p>
     Hash: <code id="hash"><code>
+  </p>
+
+  <p>
+    Sub-Hash: <code id="subhash"></code>
+  </p>
+
+  <p>
+    Sub-Hash (base 10): <span id="subhash10"></span>
+  </p>
+
+  <p>
+    Sub-Hash / No. de Participates: <span id="subhashdiv"></span>
+  </p>
+
+  <p>
+    Ganador/a: <span id="winner"></span> 🎉
   </p>
 </body>
