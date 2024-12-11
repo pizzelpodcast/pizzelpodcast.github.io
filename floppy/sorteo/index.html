@@ -59,7 +59,7 @@
           const hashLeft = hash.substring(0, hash.length - HASH_WINDOW_SIZE);
           const hashRight = hash.substring(hash.length - HASH_WINDOW_SIZE);
           const hashRight10 = parseInt(hashRight, 16);
-          const hashRightDiv = (hashRight10 / PARTICIPANTS.length).round();
+          const hashRightDiv = Math.round(hashRight10 / PARTICIPANTS.length);
 
           document.getElementById("hash").innerHTML = `${hashLeft}<mark>${hashRight}</mark>`;
           document.getElementById("subhash").textContent = hashRight;
