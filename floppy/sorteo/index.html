@@ -33,14 +33,14 @@
     const HASH_WINDOW_SIZE = 16;
 
     document.addEventListener("DOMContentLoaded", async () => {
-      const participantsUl = document.getElementById("participants");
+      const participantsOl = document.getElementById("participants");
       const goButton = document.getElementById("go");
       const targetHeightInput = document.getElementById("targetheight");
 
       PARTICIPANTS.forEach((participant) => {
         const li = document.createElement("li");
         li.textContent = participant;
-        participantsUl.append(li);
+        participantsOl.append(li);
       });
 
       let req = await fetch("https://blockchain.info/q/getblockcount?cors=true");
@@ -90,7 +90,7 @@
   <p>
     Participantes:
 
-    <ul id="participants"></ul>
+    <ol id="participants"></ol>
   </p>
 
   <p>
