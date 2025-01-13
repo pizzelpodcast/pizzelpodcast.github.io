@@ -1,14 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Michroma&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 :root {
+  --bg: #222229; /* used in SVG */
   --gap: 0.5rem;
   --heading-font: Michroma, sans-serif;
 }
 
 body {
   padding: var(--gap);
-  background: #222229;
-  color: #ddd;
+  background: var(--bg);
+  color: #DDD;
 
   font-family: Roboto, sans-serif;
   font-weight: 400;
@@ -27,6 +28,10 @@ body {
   height: 100dvh;
 }
 
+body.debug {
+  --bg: darkred;
+}
+
 h1, h2 {
   font-family: var(--heading-font);
   font-weight: 400;
@@ -35,8 +40,9 @@ h1, h2 {
 a:link, a:visited {
   color: inherit;
   text-decoration: underline;
-  text-decoration-color: hsl(from rebeccapurple calc(h * 1.1) s calc(l * 1.5));
-  text-decoration-thickness: 2px;
+  text-decoration-color: #E23D75;
+  text-decoration-thickness: 1px;
+  text-decoration-style: dotted;
 }
 
 .section {

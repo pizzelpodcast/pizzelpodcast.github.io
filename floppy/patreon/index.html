@@ -72,6 +72,19 @@
     const entrants = ENTRANTS.map(entrant => new Entrant(entrant));
     await Promise.all(entrants.map(e => e.hashReady));
 
+    // Debug mode
+
+    let targetBlockHeight = TARGET_BLOCK_HEIGHT;
+
+    if (location.search !== "") {
+      const params = new URLSearchParams(location.search);
+
+      if (params.get("h")) {
+        document.body.classList.add("debug");
+        targetBlockHeight = Number(params.get("h"));
+      }
+    }
+
     // Compute tickets
 
     await (async () => {
@@ -90,18 +103,18 @@
     // Render
 
     const targetBlockElement = document.getElementById("target-block");
-    targetBlockElement.textContent = TARGET_BLOCK_HEIGHT;
-    targetBlockElement.href = `https://blockstream.info/block-height/${TARGET_BLOCK_HEIGHT}`;
+    targetBlockElement.textContent = targetBlockHeight;
+    targetBlockElement.href = `https://blockstream.info/block-height/${targetBlockHeight}`;
 
     document.getElementById("max-winners").textContent = MAX_WINNERS;
 
     currentBlockHeight().then((currentHeight) => {
       const blockInfoElement = document.getElementById("target-block-info");
 
-      if (currentHeight >= TARGET_BLOCK_HEIGHT) {
+      if (currentHeight >= targetBlockHeight) {
         drawWinners();
       } else {
-        const remaining = TARGET_BLOCK_HEIGHT - currentHeight;
+        const remaining = targetBlockHeight - currentHeight;
         const etaHours = Math.round((remaining * 10) / 60);
         const etaMinutes = (remaining * 10) % 60;
         blockInfoElement.textContent = `⏳ Faltan ${remaining} bloques, aprox. ${etaHours} horas, ${etaMinutes} minutos`;
@@ -142,7 +155,7 @@
     }
 
     async function drawWinners() {
-      const blockData = await blockDataByHeight(TARGET_BLOCK_HEIGHT);
+      const blockData = await blockDataByHeight(targetBlockHeight);
 
       if (blockData.blocks.length === 1) {
         const blockHash = blockData.blocks[0].hash;
