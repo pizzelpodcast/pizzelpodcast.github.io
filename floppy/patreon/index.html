@@ -115,7 +115,7 @@
         drawWinners();
       } else {
         const remaining = targetBlockHeight - currentHeight;
-        const etaHours = Math.round((remaining * 10) / 60);
+        const etaHours = Math.floor((remaining * 10) / 60);
         const etaMinutes = (remaining * 10) % 60;
         blockInfoElement.textContent = `⏳ Faltan ${remaining} bloques, aprox. ${etaHours} horas, ${etaMinutes} minutos`;
       }
