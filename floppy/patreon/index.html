@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=2.0">
   <title>Pizzel Ep. 100 - Floppy Edition</title>
   <link href="https://cdn.jsdelivr.net/npm/modern-css-reset@1.4.0/dist/reset.min.css" rel="stylesheet">
   <link href="style.css" rel="stylesheet">
@@ -21,7 +22,7 @@
       "Agustina T"
     ];
 
-    const TARGET_BLOCK_HEIGHT = 800001;
+    const TARGET_BLOCK_HEIGHT = 879345;
 
     const INIT_HASH_SEED = TARGET_BLOCK_HEIGHT;
 
@@ -88,7 +89,10 @@
 
     // Render
 
-    document.getElementById("target-block").textContent = TARGET_BLOCK_HEIGHT;
+    const targetBlockElement = document.getElementById("target-block");
+    targetBlockElement.textContent = TARGET_BLOCK_HEIGHT;
+    targetBlockElement.href = `https://blockstream.info/block-height/${TARGET_BLOCK_HEIGHT}`;
+
     document.getElementById("max-winners").textContent = MAX_WINNERS;
 
     currentBlockHeight().then((currentHeight) => {
@@ -97,7 +101,10 @@
       if (currentHeight >= TARGET_BLOCK_HEIGHT) {
         drawWinners();
       } else {
-        blockInfoElement.textContent = `⏳ Faltan ${TARGET_BLOCK_HEIGHT - currentHeight} bloques`;
+        const remaining = TARGET_BLOCK_HEIGHT - currentHeight;
+        const etaHours = Math.round((remaining * 10) / 60);
+        const etaMinutes = (remaining * 10) % 60;
+        blockInfoElement.textContent = `⏳ Faltan ${remaining} bloques, aprox. ${etaHours} horas, ${etaMinutes} minutos`;
       }
     });
 
@@ -174,8 +181,19 @@
     }
 
     async function blockDataByHeight(targetHeight) {
-      const req = await fetch(`https://blockchain.info/block-height/${targetHeight}?format=json&cors=true`);
-      return await req.json();
+      const url = `https://blockchain.info/block-height/${targetHeight}?format=json&cors=true`;
+      const cache = localStorage.getItem(url);
+
+      if (cache) {
+        JSON.parse(cache);
+      } else {
+        const req = await fetch(url);
+        const json = await req.json();
+        try {
+          localStorage.setItem(url, JSON.stringify(json));
+        } catch {}
+        return json;
+      }
     }
   </script>
 </head>
@@ -195,7 +213,9 @@
         <slot name="name"></slot>
       </div>
       <div class="note">
-        <slot name="ticket"></slot> &rarr; <slot name="drawing"></slot>
+        <span class="truncate"><slot name="ticket"></slot></span>
+        &rarr;
+        <span class="truncate"><slot name="drawing"></slot></span>
       </div>
     </li>
   </template>
@@ -210,7 +230,7 @@
     <h1>Sorteo de Diskettes del Ep. 100 💾 💾 &mdash; Patreon</h1>
 
     <aside class="block-info" title="Bloque del blockchain de Bitcoin a usar como fuente de entropía">
-      Bloque objetivo: <strong id="target-block"></strong>
+      Bloque objetivo: <a target="_blank" id="target-block"></a>
       <span class="note block" id="target-block-info">&hellip;</span>
     </aside>
   </header>
@@ -235,6 +255,6 @@
   </main>
 
   <footer class="footer section">
-    <a href="https://pizzelpodcast.com/">Pizzel Podcast</a>
+    &copy; <a href="https://pizzelpodcast.com/">Pizzel Podcast</a> &ndash; Enero de 2025
   </footer>
 </body>
