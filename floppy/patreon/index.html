@@ -198,13 +198,15 @@
       const cache = localStorage.getItem(url);
 
       if (cache) {
-        JSON.parse(cache);
+        return JSON.parse(cache);
       } else {
         const req = await fetch(url);
         const json = await req.json();
+
         try {
           localStorage.setItem(url, JSON.stringify(json));
         } catch {}
+
         return json;
       }
     }
