@@ -206,7 +206,9 @@
 
         try {
           localStorage.setItem(url, JSON.stringify(json));
-        } catch {}
+        } catch (e) {
+          console.error(e);
+        }
 
         return json;
       }
