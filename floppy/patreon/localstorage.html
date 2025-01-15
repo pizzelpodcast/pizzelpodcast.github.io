@@ -195,24 +195,18 @@
 
     async function blockDataByHeight(targetHeight) {
       const url = `https://blockchain.info/block-height/${targetHeight}?format=json&cors=true`;
-      console.log(localStorage, localStorage.getItem, localStorage.setItem);
       const cache = localStorage.getItem(url);
 
-      console.log("cache", cache);
-
       if (cache) {
-        JSON.parse(cache);
+        return JSON.parse(cache);
       } else {
         const req = await fetch(url);
         const json = await req.json();
+
         try {
-          const s = JSON.stringify(json);
-          console.log("url", url);
-          console.log("s", s);
-          localStorage.setItem(url, s);
-        } catch (e) {
-          console.log("failed setItem", e);
-        }
+          localStorage.setItem(url, JSON.stringify(json));
+        } catch {}
+
         return json;
       }
     }
