@@ -1,55 +1,256 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <title>Pizzel Ep. 100 - Floppy Edition</title>
-  <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
-
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=2.0">
+  <title>Pizzel Podcast - Sorteo Diskettes Ep. 100</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎟️</text></svg>">
+  <link href="https://cdn.jsdelivr.net/npm/modern-css-reset@1.4.0/dist/reset.min.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
   <script type="module">
-    // Lista inicial de participantes. El orden importa
-    const PARTICIPANTS = [
-      "floppy_disk_connoisseur",
-      "pizza_slice_drive",
-      "retro_storage_renaissance",
-      "palmitos_pixel_party",
-      "disk_drive_diva",
-      "cheesy_tech_dreams",
-      "vintage_media_maven",
-      "pizza_underground_club",
-      "magnetic_memory_mike",
-      "margherita_madness",
-      "legacy_data_dave",
-      "random_access_muzza",
-      "diskette_detective",
-      "pizza_ninja_bytes",
-      "floppyzzetta_rellena",
-      "crust_and_circuits",
-      "floppy_90s_kid",
-      "pizza_code_master",
-      "digital_faina_hunter",
-      "slice_of_tech_heaven"
+    const ENTRANTS = [
+      "_dylankostiuk",
+      "_fentanico",
+      "achus",
+      "brionsbrain",
+      "bruno.peretti",
+      "catevarvasini",
+      "caupolican.re",
+      "ceru13an",
+      "char_lli",
+      "claudiaromerodel73",
+      "el_tio_matty",
+      "elchicopalta",
+      "eliocobolero",
+      "elsicapa",
+      "enzoperez1919",
+      "epygots",
+      "faka.jpg",
+      "fl.pablo",
+      "fprats",
+      "g2nahuel",
+      "galia1205",
+      "germanpantolini",
+      "gianmasto",
+      "gorr_emi",
+      "gusiusiusi",
+      "hernantocaguitarra",
+      "homeomorfx",
+      "horacio67809",
+      "j.m.orozco",
+      "jero.hippie",
+      "josefranco41",
+      "juansegui11",
+      "juanveliss",
+      "kierprev",
+      "lean5.xy",
+      "leohdeluca",
+      "locutomm",
+      "luispah",
+      "m.arcescazzari",
+      "manuelfsm_",
+      "matias_m_madrid",
+      "maurispalletti",
+      "melmelmel.dm",
+      "mjlescano",
+      "mortyhace",
+      "nahual3",
+      "nameplayer26",
+      "nespidev",
+      "nico0145",
+      "nicochunger",
+      "nk.val",
+      "nuneswave",
+      "pascutronico",
+      "paulgf",
+      "pbendersky",
+      "pekaito",
+      "romikid",
+      "royzatoo",
+      "scpnpau",
+      "sebastianbulfon",
+      "sebaviana1",
+      "sharif0403",
+      "shijusuarez",
+      "shnitsuga",
+      "sleepingbeast82",
+      "tinchocardinali",
+      "viegasnicolas1",
+      "xcabezaderadiox",
+      "xiselasanxiao"
     ];
 
-    // Para cada hash SHA256 representado en hexadecimal, cuántos caracteres
-    // empezando por el lado derecho usamos para obtener un número decimal,
-    // descartando el resto. Esto es porque un hash SHA256 es un número
-    // astronómicamente enorme, cuando solo necesitamos un número mayor o igual
-    // al número de participantes
-    const HASH_WINDOW_SIZE = 8;
+    const TARGET_BLOCK_HEIGHT = 881166;
 
-    // Dado un hash representado en un string hexadecimal, nos da un número
-    // entre 0 y 1, obtenido de sacar HASH_WINDOW_SIZE caracteres del lado
-    // derecho del hash, dividido por el máximo número representable en hexa
-    // para esa cantidad de caracteres
-    function strHash2Float(hash) {
-      const usedPortionInt = parseInt(hash.substring(hash.length - HASH_WINDOW_SIZE), 16);
-      return usedPortionInt / Math.pow(16, HASH_WINDOW_SIZE);
+    const INIT_HASH_SEED = TARGET_BLOCK_HEIGHT;
+
+    const MAX_WINNERS = 7;
+
+    const SHOW_RUNNERS_UP = true;
+
+    // Precalculations
+
+    class Entrant {
+      static position = 0;
+
+      #drawingAsBigInt = undefined;
+
+      constructor(name) {
+        this.position = this.constructor.position++;
+        this.name = name;
+        this.hash = undefined;
+        this.ticket = undefined;
+        this.drawing = undefined;
+        this.hashReady = this.computeHash();
+      }
+
+      compare(other) {
+        const diff = this.drawingAsBigInt - other.drawingAsBigInt;
+
+        if (diff === 0n) {
+          return 0;
+        } else if (diff < 0n) {
+          return -1;
+        }
+
+        return 1;
+      }
+
+      get drawingAsBigInt() {
+        return this.#drawingAsBigInt ??= BigInt(`0x${this.drawing}`);
+      }
+
+      get hueRotation() {
+        return (parseInt(this.hash.substring(this.hash.length - 8), 16) / Math.pow(16, 8)) * 360;
+      }
+
+      async computeHash() {
+        this.hash = await sha256(`${this.name}${this.position}`);
+      }
     }
 
-    // Calcula el digest SHA256 de un string y lo devuelve como un string
-    // hexadecimal
-    // Tomado de https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
-    async function sha256digest(message) {
-      const msgUint8 = new TextEncoder().encode(message); // encode as (utf-8) Uint8Array
+    const entrants = ENTRANTS.map(entrant => new Entrant(entrant));
+    await Promise.all(entrants.map(e => e.hashReady));
+
+    // Debug mode
+
+    let targetBlockHeight = TARGET_BLOCK_HEIGHT;
+
+    if (location.search !== "") {
+      const params = new URLSearchParams(location.search);
+
+      if (params.get("h")) {
+        document.body.classList.add("debug");
+        targetBlockHeight = Number(params.get("h"));
+      }
+    }
+
+    // Compute tickets
+
+    await (async () => {
+      const initHash = await sha256(INIT_HASH_SEED);
+
+      let i = 0;
+      for (const entrant of entrants) {
+        const prevTicket = (i === 0) ? initHash : entrants[i - 1].ticket;
+        entrant.ticket = await sha256(`${entrants[i].hash}${prevTicket}`);
+        i++;
+      }
+    })();
+
+    // Render
+
+    const targetBlockElement = document.getElementById("target-block");
+    targetBlockElement.textContent = targetBlockHeight;
+    targetBlockElement.href = `https://blockstream.info/block-height/${targetBlockHeight}`;
+
+    document.getElementById("max-winners").textContent = MAX_WINNERS;
+
+    currentBlockHeight().then((currentHeight) => {
+      const blockInfoElement = document.getElementById("target-block-info");
+
+      if (currentHeight >= targetBlockHeight) {
+        drawWinners();
+      } else {
+        const remaining = targetBlockHeight - currentHeight;
+        const etaHours = Math.floor((remaining * 10) / 60);
+        const etaMinutes = (remaining * 10) % 60;
+        blockInfoElement.textContent = `⏳ Faltan ${remaining} bloques, aprox. ${etaHours} horas, ${etaMinutes} minutos`;
+      }
+    });
+
+    renderEntrants(entrants);
+
+    function renderEntrants(entrants) {
+      const entrantCardTemplate = document.getElementById("entrant-card-template");
+      const entrantsList = document.getElementById("entrants-list")
+
+      entrants.forEach((entrant) => {
+        const entrantCardElement = entrantCardTemplate.content.cloneNode(true).firstElementChild;
+
+        entrantCardElement.querySelector("slot[name=name]").replaceWith(entrant.name);
+        entrantCardElement.querySelector("slot[name=ticket]").replaceWith(entrant.ticket);
+        entrantCardElement.querySelector(".ticket-icon").style.setProperty('--hue-rotate', `${entrant.hueRotation}deg`);
+
+        entrantsList.append(entrantCardElement);
+      });
+    }
+
+    function renderResults(sortedEntrants) {
+      const resultsElement = document.getElementById("results");
+      const winnerCardTemplate = document.getElementById("winner-card-template");
+      const runnerUpCardTemplate = document.getElementById("runner-up-card-template");
+      const winnersList = document.getElementById("winners-list")
+      const runnersUpList = document.getElementById("runners-up-list");
+
+      sortedEntrants.every((entrant, i) => {
+        const template = (i < MAX_WINNERS) ? winnerCardTemplate : runnerUpCardTemplate;
+        const cardElement = template.content.cloneNode(true).firstElementChild;
+
+        cardElement.querySelector("slot[name=name]").replaceWith(entrant.name);
+        cardElement.querySelector("slot[name=ticket]").replaceWith(entrant.ticket);
+        cardElement.querySelector("slot[name=drawing]").replaceWith(entrant.drawing);
+        cardElement.querySelector(".ticket-icon").style.setProperty('--hue-rotate', `${entrant.hueRotation}deg`);
+
+        if (i < MAX_WINNERS) {
+          winnersList.append(cardElement);
+          return true;
+        } else if (SHOW_RUNNERS_UP) {
+          runnersUpList.append(cardElement);
+          return true;
+        } else {
+          return false;
+        }
+      });
+
+      resultsElement.hidden = false;
+    }
+
+    async function drawWinners() {
+      const hash = await fetchBlockHashByHeight(targetBlockHeight);
+
+      if (hash) {
+        // TODO: move UI update elsewhere
+        document.getElementById("target-block-info").textContent = hash;
+
+        await Promise.all(
+          entrants.map((entrant) => {
+            return sha256(`${entrant.ticket}${hash}`).then((drawing) => {
+              entrant.drawing = drawing;
+            });
+          })
+        );
+
+        const sortedEntrants = entrants.slice().sort((a, b) => a.compare(b));
+
+        renderResults(sortedEntrants);
+      }
+    }
+
+    // Utils
+
+    async function sha256(msg) {
+      const msgUint8 = new TextEncoder().encode(msg); // encode as (utf-8) Uint8Array
       const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8); // hash the message
       const hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
       const hashHex = hashArray
@@ -58,146 +259,161 @@
       return hashHex;
     }
 
-    document.addEventListener("DOMContentLoaded", async () => {
-      const participantsOl = document.getElementById("participants");
-      const targetHeightInput = document.getElementById("targetheight");
-      const winSlotsInput = document.getElementById("winslots");
-      const startButton = document.getElementById("start");
+    const blastApi = {
+      blockHashByHeight: async function(height) {
+        // curl -X POST "https://bitcoin-mainnet.public.blastapi.io" \
+        //   -H 'Content-Type: application/json' \
+        //   -d '{"jsonrpc":"1.0","id":0,"method":"getblockhash","params":[700000]}'
+        const req = await fetch("https://bitcoin-mainnet.public.blastapi.io", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: `{"jsonrpc":"1.0","id":0,"method":"getblockhash","params":[${height}]}`
+        });
 
-      winSlotsInput.max = PARTICIPANTS.length;
+        // e.g.:
+        // {
+        //   "result": "0000000000000000000590fc0f3eba193a278534220b2b37e9…"
+        //   "error": NULL
+        //   "id": 0
+        // }
+        const json = await req.json();
 
-      // Mostramos la lista inicial de participantes
-      PARTICIPANTS.forEach((participant) => {
-        const li = document.createElement("li");
-        li.textContent = participant;
-        participantsOl.append(li);
-      });
-
-      // Traemos la altura del último bloque minado en el blockchain de Bitcoin,
-      // es básicamente un número e.g. 874667
-      let req = await fetch("https://blockchain.info/q/getblockcount?cors=true");
-      const currentHeight = Number(await req.text());
-
-      document.getElementById("currentheight").textContent = currentHeight;
-      targetHeightInput.value = currentHeight;
-      targetHeightInput.max = currentHeight;
-
-      // Click en "Dale!" arranca la simulación del sorteo. En la versión
-      // final no va a haber un botón, ya que la altura de bloque va a estar
-      // prefijada y eso determina los resultados
-      startButton.addEventListener("click", async () => {
-        startButton.disabled = true;
-
-        const targetHeight = Number(targetHeightInput.value);
-        const winSlots = Number(winSlotsInput.value);
-
-        // Entramos a calcular los resultados si la altura de bloque dada ya
-        // existe en el blockchain
-        if (currentHeight >= targetHeight) {
-          // Traemos la información del bloque en la altura elegida, esto nos
-          // da el hash de minado de bloque que es lo que nos interesa
-          const req = await fetch(`https://blockchain.info/block-height/${targetHeight}?format=json&cors=true`);
-          const blocks = await req.json();
-
-          // Una altura de bloque solo puede tener 1 bloque, pero chequeamos
-          // que sea así por si puede haber más de uno sobre el último bloque
-          // minado (hasta que el blockchain se decide por uno )
-          if (blocks.blocks.length === 1) {
-            // Extraemos el hash de minado de la información del bloque
-            let { hash } = blocks.blocks[0];
-
-            // Mostramos el hash del bloque
-            document.getElementById("hash").textContent = hash;
-
-            // No podemos usar el array original de participantes porque por
-            // cada ganador que elegimos hay que quitarlo de la lista para que no
-            // sea elegido dos veces, así que clonamos la lista original para
-            // tener una modificable durante los cálculos de ganadores
-            const participantsPool = PARTICIPANTS.slice();
-
-            // El elemento <ol> donde vamos a mostrar los ganadores
-            const winnersOl = document.getElementById("winners");
-            const liElements = [];
-
-            // Calculamos winSlots ganadores
-            for (let i = 0; i < winSlots; i++) {
-              //console.log("hash:", hash);
-              //console.log("pool:", participantsPool);
-
-              // Elegimos el ganador por posición usando el número que nos da
-              // el hash (ver strHash2Float())
-              const winnerIndex = Math.round(strHash2Float(hash) * (participantsPool.length - 1));
-              const winnerName = participantsPool[winnerIndex];
-
-              // Agregamos el ganador a la lista HTML
-              const li = document.createElement("li");
-              li.textContent = `${winnerName} (#${PARTICIPANTS.indexOf(winnerName) + 1})`;
-              liElements.push(li);
-
-              // Retiramos al ganador de la lista de participantes para la
-              // siguiente ronda
-              participantsPool.splice(winnerIndex, 1);
-
-              // Obtenemos un nuevo hash aplicando SHA256 digest del anterior,
-              // esto nos da un número aleatorio nuevo para el siguiente ganador
-              hash = await sha256digest(hash);
-            }
-
-            // Actualizamos la lista de ganadores en HTML
-            winnersOl.replaceChildren(...liElements);
-          }
+        if (json.error) {
+          return false;
         }
 
-        startButton.disabled = false;
-      });
-    });
+        return json.result;
+      }
+    };
+
+    const mempoolSpace = {
+      blockHashByHeight: async function(height) {
+        // TODO
+      }
+    }
+
+    async function currentBlockHeight() {
+      let req = await fetch("https://blockchain.info/q/getblockcount?cors=true");
+      return Number(await req.text());
+    }
+
+    async function fetchBlockHashByHeight(height) {
+      const localStorageCacheKey = `block-hash:${height}`;
+      const cache = localStorage.getItem(localStorageCacheKey);
+
+      if (cache) {
+        return cache;
+      } else {
+        const hash = await blastApi.blockHashByHeight(height);
+        try {
+          localStorage.setItem(localStorageCacheKey, hash);
+        } catch (e) {
+          console.log(e);
+        }
+        return hash;
+      }
+    }
+
+    async function blockDataByHeight(targetHeight) {
+      const url = `https://blockchain.info/block-height/${targetHeight}?format=json&cors=true`;
+      const cache = localStorage.getItem(url);
+
+      if (cache) {
+        return JSON.parse(cache);
+      } else {
+        const req = await fetch(url);
+        const json = await req.json();
+        try {
+          localStorage.setItem(url, JSON.stringify(json));
+        } catch {}
+        return json;
+      }
+    }
   </script>
 </head>
 <body>
-  <header>
-    <h1>Pizzel Ep. 100 - Floppy Edition 💾</h1>
-    <h2>Simulación de Sorteo 🎟️</h2>
+  <template id="entrant-card-template">
+    <li class="entrant-card">
+      <span class="ticket-icon">🎟️</span>
+      <slot name="name"></slot>
+      <span class="block note truncate" title="Número de ticket"><slot name="ticket"></slot></span>
+    </li>
+  </template>
+
+  <template id="winner-card-template">
+    <li class="winner-card">
+      <div>
+        <span class="ticket-icon">🎟️</span>
+        <slot name="name"></slot>
+      </div>
+      <div class="note">
+        <span class="truncate inline-block align-middle" title="Número de ticket"><slot name="ticket"></slot></span>
+        &rarr;
+        <span class="truncate inline-block align-middle" title="Resultado de sorteo (SHA256 de ticket + hash de bloque)"><slot name="drawing"></slot></span>
+      </div>
+    </li>
+  </template>
+
+  <template id="runner-up-card-template">
+    <li class="runner-up-card">
+      <div>
+        <span class="ticket-icon">🎟️</span>
+        <slot name="name"></slot>
+      </div>
+      <div class="note">
+        <span class="truncate inline-block align-middle" title="Número de ticket"><slot name="ticket"></slot></span>
+        &rarr;
+        <span class="truncate inline-block align-middle" title="Resultado de sorteo (SHA256 de ticket + hash de bloque)"><slot name="drawing"></slot></span>
+      </div>
+    </li>
+  </template>
+
+  <div class="logo section">
+    <svg width="140" viewBox="0 0 46.302079 18.520833" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+      <path style="fill: var(--bg)" d="m 9.260267,2.1e-4 v 4.32326 c -5.64e-4,-2.8e-4 -0.0011,-8.5e-4 -0.0014,-0.001 C 9.070969,4.21426 8.868443,4.12901 8.65477,4.06926 8.63645,4.06426 8.61795,4.05926 8.59947,4.05476 8.51523,4.03316 8.42944,4.01586 8.34212,4.00256 8.31593,3.99856 8.29004,3.99356 8.26358,3.99066 8.156403,3.97756 8.048329,3.96896 7.937501,3.96896 H 0 v 13.22917 l 1.322917,1.32291 h 1.322917 3.96875 v -3.96875 h 2.645833 l 1.043348,-0.27957 0.279569,0.27957 h 1.322917 2.645833 1.322917 7.937489 7.93749 v -0.3545 l 1.32292,0.3545 h 5.29168 l 1.98388,-0.89607 1.98487,0.89607 h 2.64583 1.32292 V 10.58354 L 44.97916,9.26063 V 1.32312 L 43.65625,2.1e-4 h -5.29167 v 4.32325 c 0,-2.8e-4 0,-8.5e-4 -0.003,-10e-4 C 38.17367,4.21425 37.97114,4.129 37.75747,4.06925 c -0.0183,-0.005 -0.0368,-0.01 -0.0553,-0.0145 -0.0842,-0.0216 -0.17007,-0.0389 -0.25736,-0.0522 -0.0263,-0.004 -0.0521,-0.009 -0.0786,-0.0119 -0.10688,-0.0131 -0.21522,-0.0217 -0.32608,-0.0217 h -5.29167 c -0.097,0 -0.19253,0.006 -0.28679,0.016 -0.28361,0.0303 -0.55282,0.1064 -0.80202,0.2186 L 30.42555,3.96894 H 22.48806 21.16514 15.873483 V 1.32292 L 14.550566,0 h -1.322917 -2.645833 z m 1.322917,1.32292 h 2.645833 v 2.64584 h -2.645833 z m 29.104166,0 h 2.64583 v 9.26042 h 1.32292 v 1.32292 h -2.64584 v -0.005 c -0.75311,0 -1.31772,-0.56464 -1.31772,-1.31774 h -0.005 V 6.61498 Z M 1.322767,5.29188 H 7.93735 c 0.75578,0 1.322917,0.56714 1.322917,1.32292 v 3.96875 c 0,0.75578 -0.567134,1.32292 -1.322917,1.32292 H 5.291517 3.9686 v 3.96875 H 1.322767 Z m 9.260417,0 h 2.645833 v 2.64584 2.09754 1.87121 H 10.583184 V 10.58355 6.6148 Z m 3.96875,0 H 21.16651 V 6.6148 l -2.64583,2.64584 -1.32291,1.32291 h 1.32291 2.64583 v 1.32292 H 14.551934 V 10.58355 L 17.19777,7.93772 18.52068,6.6148 h -1.32291 -2.645836 z m 7.937496,0 H 29.104 V 6.6148 l -2.64582,2.64584 -1.32292,1.32291 h 1.32292 2.64582 v 1.32292 H 22.48943 V 10.58355 L 25.13526,7.93772 26.45818,6.6148 h -1.32292 -2.64583 z m 9.2604,0 h 5.29167 c 0.75565,0 1.32293,0.56727 1.32293,1.32292 v 2.64584 h -5.29168 v 1.32291 h 5.29168 c 0,0.75564 -0.56728,1.32292 -1.32293,1.32292 h -5.29167 c -0.75565,0 -1.32292,-0.56728 -1.32292,-1.32292 V 9.26064 7.16309 6.6148 c 0,-0.75565 0.56727,-1.32292 1.32292,-1.32292 z M 3.9686,6.6148 v 3.96875 H 6.613917 V 6.6148 Z m 29.10367,0 V 7.93772 H 35.7181 V 6.6148 Z" />
+    </svg>
+  </div>
+
+  <header class="header section">
+    <h1>Sorteo de Diskettes del Ep. 100 💾 💾</h1>
+
+    <aside class="block-info" title="Bloque del blockchain de Bitcoin a usar como fuente de entropía">
+      Bloque objetivo: <a target="_blank" id="target-block"></a>
+      <span class="note block" id="target-block-info">&hellip;</span>
+    </aside>
   </header>
 
-  <p>
-    Participantes (de fantasía):
-    <ol id="participants"></ol>
-  </p>
+  <aside class="sidebar section">
+    <h2>
+      Participantes
+      <span class="note">en orden alfabético</span>
+    </h2>
 
-  <p>
-    Bloque actual del blockchain Bitcoin: <span id="currentheight">&hellip;</span>
-  </p>
+    <ol class="card-list count-context overflow-y-auto" id="entrants-list"></ol>
+  </aside>
 
-  <p>
-    <label>
-      Bloque objectivo: <input type="number" id="targetheight" min="1" required>
-    </label>
-  </p>
+  <main class="main section">
+    <h2>
+      Ganadores
+      <span class="note">
+        cupo de <span id="max-winners"></span>
+      </span>
+    </h2>
+    <div class="overflow-y-auto count-context" id="results" hidden>
+      <ol class="card-list" id="winners-list"></ol>
+      <details>
+        <summary class="border-block"><h3>No ganadores en orden de prioridad</h3></summary>
+        <ol class="card-list" id="runners-up-list"></ol>
+      </details>
+    </div>
+  </main>
 
-  <p>
-    💡
-    <em>
-      En el sorteo real el bloque objetivo va a estar prefijado a uno en el
-      futuro (osea, que no se haya minado todavía)
-    </em>
-  <p>
-
-  <p>
-    <label>
-      Cupo de ganadores: <input type="number" id="winslots" value="4" min="1" required>
-    </label>
-  </p>
-
-  <p>
-    <button type="button" id="start">Dale!</button>
-  </p>
-
-  <p>
-    Hash semilla: <code id="hash"></code>
-  </p>
-
-  <p>
-    Ganadores: 🎉
-    <ol id="winners"></ol>
-  </p>
+  <footer class="footer section">
+    Hecho con
+    <span class="flip-icon">
+      🍕
+      <span class="flip-icon-backface">❤️</span>
+    </span>
+    por <a href="https://pizzelpodcast.com/">Pizzel Podcast</a> &ndash; Enero de 2025
+  </footer>
 </body>

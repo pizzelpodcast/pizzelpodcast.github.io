@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Pizzel Ep. 100 - Floppy Edition</title>
+  <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
+
+  <script type="module">
+    // Lista inicial de participantes. El orden importa
+    const ENTRANTS = [
+      "floppy_disk_connoisseur",
+      "pizza_slice_drive",
+      "retro_storage_renaissance",
+      "palmitos_pixel_party",
+      "disk_drive_diva",
+      "cheesy_tech_dreams",
+      "vintage_media_maven",
+      "pizza_underground_club",
+      "magnetic_memory_mike",
+      "margherita_madness",
+      "legacy_data_dave",
+      "random_access_muzza",
+      "diskette_detective",
+      "pizza_ninja_bytes",
+      "floppyzzetta_rellena",
+      "crust_and_circuits",
+      "floppy_90s_kid",
+      "pizza_code_master",
+      "digital_faina_hunter",
+      "slice_of_tech_heaven"
+    ];
+
+    // Para cada hash SHA256 representado en hexadecimal, cuántos caracteres
+    // empezando por el lado derecho usamos para obtener un número decimal,
+    // descartando el resto. Esto es porque un hash SHA256 es un número
+    // astronómicamente enorme, cuando solo necesitamos un número mayor o igual
+    // al número de participantes
+    const HASH_WINDOW_SIZE = 8;
+
+    // Dado un hash representado en un string hexadecimal, nos da un número
+    // entre 0 y 1, obtenido de sacar HASH_WINDOW_SIZE caracteres del lado
+    // derecho del hash, dividido por el máximo número representable en hexa
+    // para esa cantidad de caracteres
+    function strHash2UnitInterval(hash) {
+      const usedPortionInt = parseInt(hash.substring(hash.length - HASH_WINDOW_SIZE), 16);
+      return usedPortionInt / Math.pow(16, HASH_WINDOW_SIZE);
+    }
+
+    // Calcula el digest SHA256 de un string y lo devuelve como un string
+    // hexadecimal
+    // Tomado de https://developer.mozilla.org/en-US/docs/Web/API/SubtleCrypto/digest
+    async function sha256digest(message) {
+      const msgUint8 = new TextEncoder().encode(message); // encode as (utf-8) Uint8Array
+      const hashBuffer = await crypto.subtle.digest("SHA-256", msgUint8); // hash the message
+      const hashArray = Array.from(new Uint8Array(hashBuffer)); // convert buffer to byte array
+      const hashHex = hashArray
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join(""); // convert bytes to hex string
+      return hashHex;
+    }
+
+    document.addEventListener("DOMContentLoaded", async () => {
+      const entrantsOl = document.getElementById("entrants");
+      const targetHeightInput = document.getElementById("targetheight");
+      const winSlotsInput = document.getElementById("winslots");
+      const startButton = document.getElementById("start");
+
+      winSlotsInput.max = ENTRANTS.length;
+
+      // Mostramos la lista inicial de participantes
+      ENTRANTS.forEach((participant) => {
+        const li = document.createElement("li");
+        li.textContent = participant;
+        entrantsOl.append(li);
+      });
+
+      // Traemos la altura del último bloque minado en el blockchain de Bitcoin,
+      // es básicamente un número e.g. 874667
+      let req = await fetch("https://blockchain.info/q/getblockcount?cors=true");
+      const currentHeight = Number(await req.text());
+
+      document.getElementById("currentheight").textContent = currentHeight;
+      targetHeightInput.value = currentHeight;
+      targetHeightInput.max = currentHeight;
+
+      // Click en "Dale!" arranca la simulación del sorteo. En la versión
+      // final no va a haber un botón, ya que la altura de bloque va a estar
+      // prefijada y eso determina los resultados
+      startButton.addEventListener("click", async () => {
+        startButton.disabled = true;
+
+        const targetHeight = Number(targetHeightInput.value);
+        const winSlots = Number(winSlotsInput.value);
+
+        // Entramos a calcular los resultados si la altura de bloque dada ya
+        // existe en el blockchain
+        if (currentHeight >= targetHeight) {
+          // Traemos la información del bloque en la altura elegida, esto nos
+          // da el hash de minado de bloque que es lo que nos interesa
+          const req = await fetch(`https://blockchain.info/block-height/${targetHeight}?format=json&cors=true`);
+          const blocks = await req.json();
+
+          // Una altura de bloque solo puede tener 1 bloque, pero chequeamos
+          // que sea así por si puede haber más de uno sobre el último bloque
+          // minado (hasta que el blockchain se decide por uno )
+          if (blocks.blocks.length === 1) {
+            // Extraemos el hash de minado de la información del bloque
+            let { hash } = blocks.blocks[0];
+
+            // Mostramos el hash del bloque
+            document.getElementById("hash").textContent = hash;
+
+            // No podemos usar el array original de participantes porque por
+            // cada ganador que elegimos hay que quitarlo de la lista para que no
+            // sea elegido dos veces, así que clonamos la lista original para
+            // tener una modificable durante los cálculos de ganadores
+            const entrantsPool = ENTRANTS.slice();
+
+            // El elemento <ol> donde vamos a mostrar los ganadores
+            const winnersOl = document.getElementById("winners");
+            const liElements = [];
+
+            // Calculamos winSlots ganadores
+            for (let i = 0; i < winSlots; i++) {
+              //console.log("hash:", hash);
+              //console.log("pool:", entrantsPool);
+
+              // Elegimos el ganador por posición usando el número que nos da
+              // el hash (ver strHash2UnitInterval())
+              const winnerIndex = Math.round(strHash2UnitInterval(hash) * (entrantsPool.length - 1));
+              const winnerName = entrantsPool[winnerIndex];
+
+              // Agregamos el ganador a la lista HTML
+              const li = document.createElement("li");
+              li.textContent = `${winnerName} (#${ENTRANTS.indexOf(winnerName) + 1})`;
+              liElements.push(li);
+
+              // Retiramos al ganador de la lista de participantes para la
+              // siguiente ronda
+              entrantsPool.splice(winnerIndex, 1);
+
+              // Obtenemos un nuevo hash aplicando SHA256 digest del anterior,
+              // esto nos da un número aleatorio nuevo para el siguiente ganador
+              hash = await sha256digest(hash);
+            }
+
+            // Actualizamos la lista de ganadores en HTML
+            winnersOl.replaceChildren(...liElements);
+          }
+        }
+
+        startButton.disabled = false;
+      });
+    });
+  </script>
+</head>
+<body>
+  <header>
+    <h1>Pizzel Ep. 100 - Floppy Edition 💾</h1>
+    <h2>Simulación de Sorteo 🎟️</h2>
+  </header>
+
+  <p>
+    Participantes (de fantasía):
+    <ol id="entrants"></ol>
+  </p>
+
+  <p>
+    Bloque actual del blockchain Bitcoin: <span id="currentheight">&hellip;</span>
+  </p>
+
+  <p>
+    <label>
+      Bloque objectivo: <input type="number" id="targetheight" min="1" required>
+    </label>
+  </p>
+
+  <p>
+    💡
+    <em>
+      En el sorteo real el bloque objetivo va a estar prefijado a uno en el
+      futuro (osea, que no se haya minado todavía)
+    </em>
+  <p>
+
+  <p>
+    <label>
+      Cupo de ganadores: <input type="number" id="winslots" value="4" min="1" required>
+    </label>
+  </p>
+
+  <p>
+    <button type="button" id="start">Dale!</button>
+  </p>
+
+  <p>
+    Hash semilla: <code id="hash"></code>
+  </p>
+
+  <p>
+    Ganadores: 🎉
+    <ol id="winners"></ol>
+  </p>
+</body>
