@@ -199,6 +199,12 @@ details[open] summary > h3::after {
   color: hsla(from currentcolor h s l / 0.5);
 }
 
+@supports not (hsla(from red h s l / a)) {
+  .note {
+    color: gray;
+  }
+}
+
 .ticket-icon {
   filter: hue-rotate(var(--hue-rotate));
 }
